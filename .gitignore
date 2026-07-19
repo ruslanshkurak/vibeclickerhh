@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.spec
+
+# C/C++ compilation
+*.so
+*.o
+
+# Environments
+.env
+.venv
+venv/
+ENV/
+env/
+
+# Databases and sessions (sensitive data!)
+analytics.db
+session.json
+applied_jobs.txt
+resume.txt
+*.log
+
+# Тестовые скрипты и дампы
+scratch_test*
+test_hh_screenshot*
+search_error_page*
+*.png
+*.jpg
+*.jpeg
+logs/
+error_dump.html
+error_screen.png
+
+# PyInstaller / Build
+*.exe
+build/
+dist/
+releases/
+build_venv.py
+.venv_build/
+
+# IDEs
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# OS files
+Thumbs.db
+desktop.ini
