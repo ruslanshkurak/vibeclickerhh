@@ -465,10 +465,10 @@ HTML_TEMPLATE = """
         <header class="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 pb-6 border-b border-slate-900">
             <div>
                 <div class="flex items-center space-x-3">
-                    <span class="text-3xl">📊</span>
+                    <span class="text-3xl">🤖</span>
                     <h1 class="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">VibeClickerHH.ru Analyst</h1>
                 </div>
-                <p class="text-slate-400 text-sm mt-1">Интерактивный дашборд автооткликов и воронки собеседований</p>
+                <p class="text-slate-400 text-sm mt-1">Интерактивный ИИ-дашборд автооткликов и воронки собеседований</p>
             </div>
             <div class="mt-4 md:mt-0 flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <div class="flex items-center space-x-2 bg-slate-900/50 border border-slate-800 px-3 py-2 rounded-xl text-xs text-slate-300">
@@ -525,47 +525,22 @@ HTML_TEMPLATE = """
                         <span class="p-1.5 bg-emerald-500/10 rounded-lg text-emerald-400 text-sm">✉️</span>
                     </div>
                     <p class="text-3xl font-extrabold text-emerald-400 mt-2">{{ invitations }}</p>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-            <!-- Left Side: Metric Cards (2/3 width) -->
-            <div class="lg:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <!-- Card 1: Всего попыток -->
-                <div class="bg-slate-900/60 backdrop-blur-md p-5 rounded-2xl border border-slate-900 shadow-xl flex flex-col justify-between">
-                    <div class="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
-                        <span>Всего в обработке</span>
-                        <span class="text-slate-500 text-base">📊</span>
-                    </div>
-                    <div class="text-2xl sm:text-3xl font-extrabold text-slate-100">{{ total }}</div>
-                    <div class="text-[11px] text-slate-500 mt-2 font-medium">Общее число просмотренных</div>
                 </div>
-
-                <!-- Card 2: Успешно отправлено -->
-                <div class="bg-slate-900/60 backdrop-blur-md p-5 rounded-2xl border border-slate-900 shadow-xl flex flex-col justify-between">
-                    <div class="flex items-center justify-between text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-2">
-                        <span>Отправлено откликов</span>
-                        <span class="text-emerald-400 text-base">🚀</span>
+                <!-- Card 6 -->
+                <div onclick="setCardFilter('today', this)" class="stats-card bg-slate-900/60 backdrop-blur-md p-5 rounded-2xl border border-slate-900 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-cyan-500/50 cursor-pointer active:scale-[0.98]">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400 text-xs font-semibold uppercase tracking-wider">За сегодня</span>
+                        <span class="p-1.5 bg-cyan-500/10 rounded-lg text-cyan-400 text-sm">📅</span>
                     </div>
-                    <div class="text-2xl sm:text-3xl font-extrabold text-emerald-400">{{ applied }}</div>
-                    <div class="text-[11px] text-slate-500 mt-2 font-medium">Успешно доставлено на hh.ru</div>
+                    <p class="text-3xl font-extrabold text-cyan-400 mt-2">{{ applied_today }} <span class="text-xs text-slate-500 font-normal">/ {{ total_today }}</span></p>
                 </div>
-
-                <!-- Card 3: Приглашения (Интервью) -->
-                <div class="bg-slate-900/60 backdrop-blur-md p-5 rounded-2xl border border-slate-900 shadow-xl flex flex-col justify-between">
-                    <div class="flex items-center justify-between text-indigo-400 text-xs font-semibold uppercase tracking-wider mb-2">
-                        <span>Приглашения</span>
-                        <span class="text-indigo-400 text-base">✉️</span>
+                <!-- Card 7 -->
+                <div onclick="setCardFilter('week', this)" class="stats-card bg-slate-900/60 backdrop-blur-md p-5 rounded-2xl border border-slate-900 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-violet-500/50 cursor-pointer active:scale-[0.98]">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400 text-xs font-semibold uppercase tracking-wider">За 7 дней</span>
+                        <span class="p-1.5 bg-violet-500/10 rounded-lg text-violet-400 text-sm">🗓️</span>
                     </div>
-                    <div class="text-2xl sm:text-3xl font-extrabold text-indigo-400">{{ invitations }}</div>
-                    <div class="text-[11px] text-slate-500 mt-2 font-medium">Получено ответов от HR</div>
-                </div>
-
-                <!-- Card 4: Офферы -->
-                <div class="bg-slate-900/60 backdrop-blur-md p-5 rounded-2xl border border-slate-900 shadow-xl flex flex-col justify-between">
-                    <div class="flex items-center justify-between text-fuchsia-400 text-xs font-semibold uppercase tracking-wider mb-2">
-                        <span>Получено Офферов</span>
-                        <span class="text-fuchsia-400 text-base">🎉</span>
-                    </div>
-                    <div class="text-2xl sm:text-3xl font-extrabold text-fuchsia-400">{{ offers }}</div>
-                    <div class="text-[11px] text-slate-500 mt-2 font-medium">Успешные офферы</div>
+                    <p class="text-3xl font-extrabold text-violet-400 mt-2">{{ applied_week }} <span class="text-xs text-slate-500 font-normal">/ {{ total_week }}</span></p>
                 </div>
             </div>
             
@@ -573,7 +548,7 @@ HTML_TEMPLATE = """
             <div class="bg-slate-900/60 backdrop-blur-md p-6 rounded-2xl border border-slate-900 shadow-xl flex flex-col justify-between">
                 <div>
                     <h3 class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4 flex items-center justify-between">
-                        <span>📊 Воронка Конверсии</span>
+                        <span>📊 ИИ-Воронка Конверсии</span>
                         <span class="text-[9px] font-bold bg-indigo-500/15 text-indigo-400 px-2 py-0.5 rounded-full uppercase tracking-wider">Live Analyst</span>
                     </h3>
                     
@@ -640,17 +615,17 @@ HTML_TEMPLATE = """
                         <option value="all">Все вакансии</option>
                         <option value="applied">Только успешные отклики</option>
                         <option value="manual">Только требующие ручной проверки</option>
-                        <option value="skipped">Только пропущенные (Низкая оценка / Блэклист)</option>
+                        <option value="skipped">Только пропущенные ИИ/Блэклистом</option>
                         <option value="error">Только ошибки</option>
                     </select>
                 </div>
-                <!-- Score Filter -->
+                <!-- AI Score Filter -->
                 <div class="flex-grow sm:flex-none min-w-[190px]">
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Фильтр по оценке соответствия</label>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Фильтр по оценке ИИ</label>
                     <select id="score-filter-select" onchange="filterRows()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-300 focus:outline-none focus:border-indigo-500 transition-all duration-200 cursor-pointer">
                         <option value="all">Любая оценка</option>
-                        <option value="high">Высокая оценка соответствия (>= 7)</option>
-                        <option value="low">Низкая оценка соответствия (< 7)</option>
+                        <option value="high">Высокая оценка ИИ (>= 7)</option>
+                        <option value="low">Низкая оценка ИИ (< 7)</option>
                     </select>
                 </div>
                 <!-- Date Filter Box -->
@@ -700,7 +675,7 @@ HTML_TEMPLATE = """
                             <!-- Score Header -->
                             <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-800/40 select-none group" onclick="sortTable('score')">
                                 <div class="flex items-center space-x-1.5">
-                                    <span>Оценка соответствия</span>
+                                    <span>Оценка ИИ</span>
                                     <span id="sort-arrow-score" class="sort-arrow text-[10px] text-slate-500">↕</span>
                                 </div>
                             </th>
@@ -711,7 +686,7 @@ HTML_TEMPLATE = """
                             <!-- Notes Header -->
                             <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Личные заметки</th>
                             <!-- Actions Header -->
-                            <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Детали / Действия</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">ИИ / Действия</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-900/60 bg-slate-950/20">
@@ -733,7 +708,7 @@ HTML_TEMPLATE = """
                                 </div>
                                 <div class="col-company text-xs text-slate-400 mt-0.5">{{ r.company }}</div>
                             </td>
-                            <!-- Score -->
+                            <!-- AI Score -->
                             <td class="col-score px-6 py-4 whitespace-nowrap" data-score="{{ r.ai_score or 0 }}">
                                 <span class="px-2.5 py-1 inline-flex text-xs leading-5 font-bold rounded-full 
                                     {% if r.ai_score and r.ai_score|int >= 7 %}bg-green-500/10 text-green-400 border border-green-500/20{% else %}bg-red-500/10 text-red-400 border border-red-500/20{% endif %}">
@@ -756,7 +731,7 @@ HTML_TEMPLATE = """
                                     <option value="Успешно отправлено" class="bg-slate-950 text-slate-300" {% if status == 'Успешно отправлено' %}selected{% endif %}>Успешно отправлено</option>
                                     <option value="Требует ручной проверки" class="bg-slate-950 text-slate-300" {% if status == 'Требует ручной проверки' %}selected{% endif %}>⚠️ Требует проверки</option>
                                     <option value="Ошибка (вмешательство пользователя)" class="bg-slate-950 text-slate-300" {% if status == 'Ошибка (вмешательство пользователя)' %}selected{% endif %}>Ошибка (ручное вмешательство)</option>
-                                    <option value="Пропущено (Низкая оценка ИИ)" class="bg-slate-950 text-slate-300" {% if status == 'Пропущено (Низкая оценка ИИ)' %}selected{% endif %}>Пропущено (Низкая оценка)</option>
+                                    <option value="Пропущено (Низкая оценка ИИ)" class="bg-slate-950 text-slate-300" {% if status == 'Пропущено (Низкая оценка ИИ)' %}selected{% endif %}>Пропущено (Низкая оценка ИИ)</option>
                                     <option value="Пропущено (Черный список)" class="bg-slate-950 text-slate-300" {% if status == 'Пропущено (Черный список)' %}selected{% endif %}>Пропущено (Черный список)</option>
                                     <option value="Пропущено (Анкета/Тест)" class="bg-slate-950 text-slate-300" {% if status == 'Пропущено (Анкета/Тест)' %}selected{% endif %}>Пропущено (Анкета/Тест)</option>
                                     <option value="Пропущено (Кнопка не найдена)" class="bg-slate-950 text-slate-300" {% if status == 'Пропущено (Кнопка не найдена)' %}selected{% endif %}>Пропущено (Кнопка не найдена)</option>
@@ -803,7 +778,7 @@ HTML_TEMPLATE = """
                                     </div>
                                 </div>
                             </td>
-                            <!-- Actions & Modal Button -->
+                            <!-- Actions & AI Modal Button -->
                             <td class="px-6 py-4 whitespace-nowrap text-right text-xs font-semibold space-x-2">
                                 <button onclick="showAI({{ r.ai_reason | tojson | forceescape }}, {{ r.cover_letter | tojson | forceescape }})" class="inline-flex items-center text-indigo-400 hover:text-indigo-200 bg-indigo-500/10 hover:bg-indigo-500/20 px-3 py-1.5 rounded-lg border border-indigo-500/20 transition-all duration-200 cursor-pointer">📖 Анализ & Письмо</button>
                                 <button onclick="deleteRow('{{ r.job_id }}', this)" class="inline-flex items-center text-red-400 hover:text-red-200 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-lg border border-red-500/20 transition-all duration-200 cursor-pointer">🗑️ Удалить</button>
@@ -816,12 +791,12 @@ HTML_TEMPLATE = """
         </main>
     </div>
 
-    <!-- Details Premium Modal -->
+    <!-- AI Details Premium Modal -->
     <div id="modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md items-center justify-center p-4 z-50 transition-opacity duration-300">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-6 max-h-[85vh] overflow-y-auto shadow-2xl flex flex-col">
             <header class="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
                 <h2 class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent flex items-center space-x-2">
-                    <span>📊</span>
+                    <span>🧠</span>
                     <span>Детальный анализ вакансии</span>
                 </h2>
                 <button onclick="hideModal()" class="text-slate-400 hover:text-slate-100 text-lg bg-slate-850 p-1.5 rounded-xl border border-slate-800 hover:bg-slate-800 transition-colors">✕</button>

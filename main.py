@@ -132,7 +132,7 @@ def _process_bot(dry_run: bool = True, session_id: int = 0, start_time_stamp: fl
             print("[❌ Ошибка] Файл resume.txt пуст или содержит шаблон. Пожалуйста, заполните резюме перед запуском бота!")
             return
 
-    print("[ℹ️] Инициализация сервиса анализа...")
+    print("[ℹ️] Инициализация Gemini ИИ-сервиса...")
     ai_service = GeminiService()
     
     print("[ℹ️] Запуск браузера...")
@@ -425,19 +425,19 @@ def _process_bot(dry_run: bool = True, session_id: int = 0, start_time_stamp: fl
 
                     vacancy_text = description_element.inner_text()
                     
-                    # Оценка соответствия (если не отключено)
+                    # Отправляем в ИИ для скоринга (если не отключено)
                     if Config.DISABLE_AI:
-                        print("[ℹ️] Авто-оценка отключена в настройках. Автоматическое одобрение.")
+                        print("[ℹ️] Оценка ИИ отключена в настройках. Автоматическое одобрение.")
                         score = 10
-                        reason = "Авто-оценка отключена"
+                        reason = "Оценка ИИ отключена"
                     else:
-                        print("[📊] Анализ соответствия вакансии...")
+                        print("[🤖 ИИ] Оценка вакансии...")
                         evaluation = ai_service.evaluate_vacancy(resume, vacancy_text)
                         score = evaluation["score"]
                         reason = evaluation["reason"]
 
-                    print(f"[📈 Оценка соответствия]: {score}/10")
-                    print(f"[💬 Вывод анализа]: {reason}")
+                    print(f"[📈 Оценка ИИ]: {score}/10")
+                    print(f"[💬 Комментарий ИИ]: {reason}")
 
                     if score < Config.MIN_FIT_SCORE:
                         print(f"[⏭️] Оценка {score} ниже минимального порога {Config.MIN_FIT_SCORE}. Пропускаем вакансию.")
@@ -450,7 +450,7 @@ def _process_bot(dry_run: bool = True, session_id: int = 0, start_time_stamp: fl
                         print("[📝] Использование шаблонного сопроводительного письма...")
                         cover_letter = Config.TEMPLATE_LETTER_TEXT if Config.TEMPLATE_LETTER_TEXT else "Здравствуйте! Меня заинтересовала ваша вакансия. Буду рад обсудить подробности на собеседовании."
                     else:
-                        print("[📝] Составление сопроводительного письма под вакансию...")
+                        print("[🤖 ИИ] Генерация сопроводительного письма под вакансию...")
                         cover_letter = ai_service.generate_cover_letter(resume, vacancy_text)
                     print(f"--- Сопроводительное письмо ---\n{cover_letter}\n-----------------------------")
 

@@ -45,7 +45,7 @@ def generate_html_dashboard():
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Вакансия</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Оценка соответствия</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Оценка ИИ</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Детали</th>
                     </tr>
@@ -98,7 +98,7 @@ def generate_html_dashboard():
                             </span>
                         </td>
                         <td class="px-6 py-4 text-sm font-medium">
-                            <button onclick="alert('Результат анализа:\\n{reason}\\n\\nПисьмо:\\n{letter}')" class="text-indigo-600 hover:text-indigo-900 bg-indigo-50 px-3 py-1 rounded">Посмотреть</button>
+                            <button onclick="alert('Решение ИИ:\\n{reason}\\n\\nПисьмо:\\n{letter}')" class="text-indigo-600 hover:text-indigo-900 bg-indigo-50 px-3 py-1 rounded">Посмотреть</button>
                         </td>
                     </tr>
 """

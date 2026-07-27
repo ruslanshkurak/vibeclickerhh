@@ -16,8 +16,8 @@ ENV/
 env/
 
 # Databases and sessions (sensitive data!)
-analytics.db*
-session*.json
+analytics.db
+session.json
 applied_jobs.txt
 resume.txt
 *.log
@@ -52,8 +52,3 @@ releases/
 # OS files
 Thumbs.db
 desktop.ini
-
-# Testing & Coverage
-.pytest_cache/
-.coverage
-htmlcov/
