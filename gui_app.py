@@ -243,7 +243,7 @@ class App(ctk.CTk):
         brand_frame.grid(row=0, column=0, padx=20, pady=12, sticky="w")
 
         ctk.CTkLabel(
-            brand_frame, text="🤖", 
+            brand_frame, text="⚡", 
             font=ctk.CTkFont(size=22)
         ).pack(side="left", padx=(0, 8))
 
@@ -629,7 +629,7 @@ class App(ctk.CTk):
 
         _make_stat_card(stats_frame, "Отклики", "lbl_stat_applies", f"0 / {Config.MAX_APPLIES_PER_RUN}", "🚀", Theme.ACCENT_GREEN, 0, font_size=14)
         _make_stat_card(stats_frame, "Время сессии", "lbl_stat_time", "00:00:00", "⏱", Theme.ACCENT_CYAN, 1, font_size=14)
-        _make_stat_card(stats_frame, "Оценка ИИ", "lbl_stat_score", "— / 10", "🤖", Theme.ACCENT_VIOLET, 2, font_size=14)
+        _make_stat_card(stats_frame, "Оценка соответствия", "lbl_stat_score", "— / 10", "🎯", Theme.ACCENT_VIOLET, 2, font_size=13)
         _make_stat_card(stats_frame, "Задержка", "lbl_stat_mode", "Смарт-динамика", "☕", Theme.ACCENT_AMBER, 3, font_size=12)
 
         # ─── Консоль логов ───
@@ -723,12 +723,12 @@ class App(ctk.CTk):
         scroll_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
         scroll_frame.grid_columnconfigure((0, 1), weight=1)
 
-        # --- БЛОК 1: КЛЮЧИ И ИИ-МОДЕЛИ ---
-        ai_frame = self._create_settings_card(scroll_frame, "🔑  ИИ И МОДЕЛИ ИНТЕЛЛЕКТА", Theme.ACCENT_PRIMARY)
+        # --- БЛОК 1: КЛЮЧИ И МОДЕЛИ АНАЛИЗА ---
+        ai_frame = self._create_settings_card(scroll_frame, "🔑  КЛЮЧИ И НАСТРОЙКИ АНАЛИЗА", Theme.ACCENT_PRIMARY)
         ai_frame.grid(row=0, column=0, columnspan=2, padx=8, pady=8, sticky="ew")
         ai_frame.columnconfigure(1, weight=1)
 
-        self._create_field_label(ai_frame, "Gemini API Key:", row=1)
+        self._create_field_label(ai_frame, "API Key сервиса:", row=1)
         self.entry_api_key = self._create_entry(ai_frame, "Вставьте ваш API ключ...", row=1)
         self.entry_api_key.insert(0, Config.GEMINI_API_KEY)
 
@@ -736,7 +736,7 @@ class App(ctk.CTk):
         self._create_field_label(ai_frame, "Где взять ключ:", row=2)
         self.lbl_api_link = ctk.CTkLabel(
             ai_frame,
-            text="Получить бесплатный API-ключ в Google AI Studio",
+            text="Получить бесплатный API-ключ сервиса",
             font=ctk.CTkFont(size=11, underline=True),
             text_color=Theme.ACCENT_CYAN,
             cursor="hand2"
@@ -744,7 +744,7 @@ class App(ctk.CTk):
         self.lbl_api_link.grid(row=2, column=1, padx=16, pady=4, sticky="w")
         self.lbl_api_link.bind("<Button-1>", lambda e: webbrowser.open("https://aistudio.google.com/"))
 
-        self._create_field_label(ai_frame, "ИИ Модель:", row=3)
+        self._create_field_label(ai_frame, "Модель анализа:", row=3)
         self.combobox_model = ctk.CTkComboBox(
             ai_frame, values=["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash", "gemini-2.5-flash", "gemma-4-26b-a4b-it"], 
             fg_color=Theme.BG_DARKEST, border_color=Theme.BORDER,
@@ -755,9 +755,9 @@ class App(ctk.CTk):
         self.combobox_model.grid(row=3, column=1, padx=16, pady=8, sticky="ew")
         self.combobox_model.set(Config.GEMINI_MODEL)
 
-        # Галочка: Использовать ИИ для оценки вакансий
+        # Галочка: Использовать авто-оценку соответствия вакансий
         self.switch_disable_ai = ctk.CTkSwitch(
-            ai_frame, text="  Использовать ИИ для оценки вакансий", 
+            ai_frame, text="  Использовать авто-оценку соответствия вакансий", 
             font=ctk.CTkFont(size=12, weight="bold"),
             progress_color=Theme.ACCENT_PRIMARY,
             button_color=Theme.ACCENT_VIOLET,
@@ -831,12 +831,12 @@ class App(ctk.CTk):
             self.entry_region_id.configure(state="disabled")
 
         # --- БЛОК 3: ФИЛЬТРЫ И ГРЕЙДЫ ---
-        filters_frame = self._create_settings_card(scroll_frame, "🎯  ФИЛЬТРЫ И ОЦЕНКИ ИИ", Theme.ACCENT_AMBER)
+        filters_frame = self._create_settings_card(scroll_frame, "🎯  ФИЛЬТРЫ И ОЦЕНКА СООТВЕТСТВИЯ", Theme.ACCENT_AMBER)
         filters_frame.grid(row=1, column=1, padx=8, pady=8, sticky="nsew")
         filters_frame.columnconfigure(1, weight=1)
 
         # 1. Минимальный балл соответствия
-        self._create_field_label(filters_frame, "Миним. балл ИИ (1-10):", row=1, pady=(8, 2))
+        self._create_field_label(filters_frame, "Миним. балл (1-10):", row=1, pady=(8, 2))
         self.entry_fit_score = self._create_entry(filters_frame, "", row=1, pady=(8, 2))
         self.entry_fit_score.insert(0, str(Config.MIN_FIT_SCORE))
         self._create_hint(filters_frame, "💡 Минимальная оценка соответствия резюме по шкале от 1 до 10", row=2)
@@ -916,8 +916,8 @@ class App(ctk.CTk):
         
         self._create_hint(filters_frame, "💡 Автоматическая остановка бота через указанное время. 0 ч. 0 мин. — без лимита.", row=18, pady=(0, 14))
 
-        # --- БЛОК 4: ИИ-ПЕРСОНАЛИЗАЦИЯ СОПРОВОДИТЕЛЬНЫХ ПИСЕМ ---
-        pers_frame = self._create_settings_card(scroll_frame, "✍️  ПЕРСОНАЛИЗАЦИЯ ИИ-ПИСЕМ", Theme.ACCENT_VIOLET)
+        # --- БЛОК 4: ПЕРСОНАЛИЗАЦИЯ СОПРОВОДИТЕЛЬНЫХ ПИСЕМ ---
+        pers_frame = self._create_settings_card(scroll_frame, "✍️  ПЕРСОНАЛИЗАЦИЯ СОПРОВОДИТЕЛЬНЫХ ПИСЕМ", Theme.ACCENT_VIOLET)
         pers_frame.grid(row=2, column=0, columnspan=2, padx=8, pady=8, sticky="ew")
         pers_frame.columnconfigure(1, weight=1)
 
@@ -943,9 +943,9 @@ class App(ctk.CTk):
         self.txt_special_wishes.grid(row=2, column=1, padx=16, pady=8, sticky="ew")
         self.txt_special_wishes.insert("1.0", Config.USER_SPECIAL_WISHES)
 
-        # Галочка: Использовать собственный шаблон вместо ИИ
+        # Галочка: Использовать собственный шаблон
         self.switch_use_template = ctk.CTkSwitch(
-            pers_frame, text="  Использовать собственный шаблон вместо ИИ", 
+            pers_frame, text="  Использовать собственный фиксированный шаблон письма", 
             font=ctk.CTkFont(size=12, weight="bold"),
             progress_color=Theme.ACCENT_PRIMARY,
             button_color=Theme.ACCENT_VIOLET,
@@ -987,7 +987,7 @@ class App(ctk.CTk):
 
         # Кнопка: Очистить пропущенные из базы
         self.btn_reset_skipped = ctk.CTkButton(
-            buttons_frame, text="🧹  Сбросить историю пропусков ИИ", 
+            buttons_frame, text="🧹  Сбросить историю пропусков", 
             font=ctk.CTkFont(size=14, weight="bold"),
             fg_color=Theme.BTN_CYAN, hover_color=Theme.BTN_CYAN_HOVER,
             height=48, corner_radius=12,
@@ -1374,7 +1374,22 @@ class App(ctk.CTk):
             return
 
         self.write_log("\n[⏹] Команда на остановку бота...\n", "warning")
+        
+        # Сохраняем свежие лимиты в .env
+        try:
+            self.save_main_limits_to_env()
+        except Exception:
+            pass
+
         if self.bot_process:
+            try:
+                # Отправляем перевод строки, чтобы разблокировать читающие процессы (включая авторизацию)
+                if self.bot_process.stdin:
+                    self.bot_process.stdin.write("\n")
+                    self.bot_process.stdin.flush()
+            except Exception:
+                pass
+
             try:
                 self.bot_process.terminate()
                 self.bot_process.wait(timeout=3)
@@ -1513,6 +1528,10 @@ class App(ctk.CTk):
         self.btn_auth.pack_forget()
         self.running_controls_frame.pack(fill="x", padx=14, pady=(0, 6))
         
+        # Показываем кнопку "Сохранить и завершить авторизацию"
+        self.btn_resume.configure(text="▶️  Сохранить и завершить авторизацию", state="normal")
+        self.btn_resume.pack(fill="x", padx=14, pady=(0, 6))
+        
         # Меняем индикатор на "Активен" (голубой для авторизации)
         self.status_indicator.configure(text_color=Theme.ACCENT_CYAN)
         self.status_text_label.configure(text="Авторизация", text_color=Theme.ACCENT_CYAN)
@@ -1524,7 +1543,7 @@ class App(ctk.CTk):
             
         self.write_log(f"\n[🔑] ЗАПУСК ручной авторизации...\n", "bot_action")
         self.write_log("Откроется окно браузера hh.ru. Пожалуйста, выполните вход.\n", "info")
-        self.write_log("После успешного входа нажмите зеленую кнопку 'Продолжить работу' здесь в GUI!\n", "warning")
+        self.write_log("После входа в аккаунт нажмите кнопку 'Сохранить и завершить авторизацию' выше или просто закройте окно браузера.\n", "warning")
         
         try:
             self.bot_process = subprocess.Popen(
@@ -1777,9 +1796,18 @@ class App(ctk.CTk):
         toast.after(3000, lambda: toast.destroy() if toast.winfo_exists() else None)
 
     def on_closing(self):
+        # Корректное сохранение настроек в .env перед выходом
+        try:
+            self.save_main_limits_to_env()
+        except Exception:
+            pass
+
         # Корректное завершение фоновых процессов при закрытии
         if self.bot_process:
             try:
+                if self.bot_process.stdin:
+                    self.bot_process.stdin.write("\n")
+                    self.bot_process.stdin.flush()
                 self.bot_process.terminate()
                 self.bot_process.wait(timeout=2)
             except Exception:
@@ -1835,7 +1863,7 @@ def show_instant_splash():
                 pass
                 
         if not img_ok:
-            lbl_logo = tk.Label(frame, text="🤖", font=("Segoe UI Emoji", 30), bg="#141417", fg="#6366f1")
+            lbl_logo = tk.Label(frame, text="⚡", font=("Segoe UI Emoji", 30), bg="#141417", fg="#6366f1")
             lbl_logo.pack(pady=(18, 4))
 
         lbl_title = tk.Label(frame, text="VibeClickerHH.ru", font=("Segoe UI", 16, "bold"), bg="#141417", fg="#ececf1")
@@ -1851,11 +1879,11 @@ def show_instant_splash():
 
         def animate_pbar(pos=0):
             try:
-                if splash.winfo_exists():
+                if splash.winfo_exists() and pbar.winfo_exists():
                     new_pos = (pos + 10) % 340
                     pbar.coords(bar_rect, new_pos, 0, new_pos + 90, 4)
                     splash.after(35, animate_pbar, new_pos)
-            except Exception:
+            except (tk.TclError, Exception):
                 pass
 
         animate_pbar()

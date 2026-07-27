@@ -28,7 +28,7 @@ class GeminiService:
         self.initialized = False
 
         if not self.api_key or "YOUR_GEMINI" in self.api_key:
-            print("[⚠️ Предупреждение] API-ключ Gemini не настроен в файле .env. ИИ-функции будут отключены.")
+            print("[⚠️ Предупреждение] API-ключ не настроен в файле .env. Авто-оценка отключена.")
             return
 
         try:
@@ -38,7 +38,7 @@ class GeminiService:
                 _GEMINI_CONFIGURED = True
             self.initialized = True
         except Exception as e:
-            print(f"[❌ Ошибка] Не удалось инициализировать Gemini API: {e}")
+            print(f"[❌ Ошибка] Не удалось инициализировать сервис анализа: {e}")
 
     def evaluate_vacancy(self, resume: str, vacancy_text: str) -> dict:
         """
@@ -46,8 +46,8 @@ class GeminiService:
         Возвращает словарь: {"score": int, "reason": str}
         """
         if not self.initialized:
-            # Если ИИ не настроен, возвращаем дефолтные значения (пропускаем или одобряем всё)
-            return {"score": 10, "reason": "ИИ не инициализирован, авто-одобрение"}
+            # Если сервис не настроен, возвращаем дефолтные значения (пропускаем или одобряем всё)
+            return {"score": 10, "reason": "Авто-оценка отключена, авто-одобрение"}
 
         prompt = f"""
         Ты — опытный ИТ-рекрутер. Твоя задача — сопоставить резюме соискателя с вакансией и оценить, насколько кандидат подходит на эту роль по шкале от 1 до 10.
@@ -101,7 +101,7 @@ class GeminiService:
                 "reason": data.get("reason", "Успешно проанализировано")
             }
         except Exception as e:
-            print(f"[⚠️ Ошибка при оценке вакансии через Gemini/Gemma]: {e}")
+            print(f"[⚠️ Ошибка при оценке вакансии]: {e}")
             # Фолбек на случай, если JSON не распарсился стандартным способом
             if 'response' in locals() and response and response.text:
                 import re
@@ -110,9 +110,9 @@ class GeminiService:
                 reason_match = re.search(r'"reason"\s*:\s*"([^"]+)"', response.text)
                 if score_match:
                     score_val = int(score_match.group(1))
-                    reason_val = reason_match.group(1) if reason_match else "Успешно извлечено регулярным выражением"
+                    reason_val = reason_match.group(1) if reason_match else "Успешно извлечено"
                     return {"score": score_val, "reason": reason_val}
-            return {"score": 5, "reason": "Произошла ошибка при анализе ИИ (не удалось распарсить ответ)"}
+            return {"score": 5, "reason": "Произошла ошибка при анализе вакансии (не удалось распарсить ответ)"}
 
     def generate_cover_letter(self, resume: str, vacancy_text: str) -> str:
         """
@@ -221,7 +221,7 @@ class GeminiService:
             
             return letter
         except Exception as e:
-            print(f"[⚠️ Ошибка при генерации письма через Gemini]: {e}")
+            print(f"[⚠️ Ошибка при генерации письма]: {e}")
             user_name = get_user_name_from_resume()
             if user_contacts:
                 if "С уважением" in user_contacts:
