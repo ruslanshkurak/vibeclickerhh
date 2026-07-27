@@ -16,8 +16,8 @@ ENV/
 env/
 
 # Databases and sessions (sensitive data!)
-analytics.db
-session.json
+analytics.db*
+session*.json
 applied_jobs.txt
 resume.txt
 *.log

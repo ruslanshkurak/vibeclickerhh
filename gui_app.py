@@ -166,6 +166,11 @@ class App(ctk.CTk):
         # ─── Футер ───
         self.setup_footer()
 
+        # Инициализация динамических карточек KPI
+        self.bot_start_time = None
+        self.current_applied_count = 0
+        self.update_session_timer()
+
         # Автоматический запуск Flask дашборда в фоне при старте
         self.start_dashboard()
 
@@ -387,12 +392,12 @@ class App(ctk.CTk):
         # ── Карточка статуса бота ──
         status_card = ctk.CTkFrame(
             sidebar, fg_color=Theme.BG_DARKEST, 
-            corner_radius=14, border_width=1, border_color=Theme.BORDER
+            corner_radius=12, border_width=1, border_color=Theme.BORDER
         )
-        status_card.pack(fill="x", padx=14, pady=(6, 4))
+        status_card.pack(fill="x", padx=12, pady=(4, 2))
 
         status_inner = ctk.CTkFrame(status_card, fg_color="transparent")
-        status_inner.pack(fill="x", padx=14, pady=8)
+        status_inner.pack(fill="x", padx=12, pady=4)
 
         ctk.CTkLabel(
             status_inner, text="СТАТУС БОТА",
@@ -401,19 +406,19 @@ class App(ctk.CTk):
         ).pack(anchor="w")
 
         status_row = ctk.CTkFrame(status_inner, fg_color="transparent")
-        status_row.pack(fill="x", pady=(4, 0))
+        status_row.pack(fill="x", pady=(2, 0))
 
         # Светящийся индикатор
         self.status_indicator = ctk.CTkLabel(
             status_row, text="⬤", 
-            font=ctk.CTkFont(size=24),
+            font=ctk.CTkFont(size=20),
             text_color=Theme.STATUS_OFF
         )
-        self.status_indicator.pack(side="left", padx=(0, 10))
+        self.status_indicator.pack(side="left", padx=(0, 8))
 
         self.status_text_label = ctk.CTkLabel(
             status_row, text="Остановлен", 
-            font=ctk.CTkFont(size=14, weight="bold"),
+            font=ctk.CTkFont(size=13, weight="bold"),
             text_color=Theme.STATUS_OFF
         )
         self.status_text_label.pack(side="left")
@@ -423,18 +428,18 @@ class App(ctk.CTk):
             sidebar, text="УПРАВЛЕНИЕ",
             font=ctk.CTkFont(size=9, weight="bold"),
             text_color=Theme.TEXT_MUTED
-        ).pack(anchor="w", padx=18, pady=(8, 4))
+        ).pack(anchor="w", padx=16, pady=(4, 2))
 
         # Главная кнопка: Запустить автоотклик
         self.btn_run = ctk.CTkButton(
             sidebar, text="🚀  Запустить автоотклик", 
-            font=ctk.CTkFont(size=13, weight="bold"),
+            font=ctk.CTkFont(size=12, weight="bold"),
             fg_color=Theme.BTN_GREEN, hover_color=Theme.BTN_GREEN_HOVER,
-            height=40, corner_radius=10,
+            height=36, corner_radius=9,
             text_color="#ffffff",
             command=self.start_bot_run
         )
-        self.btn_run.pack(fill="x", padx=14, pady=(0, 6))
+        self.btn_run.pack(fill="x", padx=12, pady=(0, 4))
 
         # Контейнер для кнопок при активном боте (Пауза / Стоп)
         self.running_controls_frame = ctk.CTkFrame(sidebar, fg_color="transparent")
@@ -443,28 +448,28 @@ class App(ctk.CTk):
             self.running_controls_frame, text="⏸ Пауза", 
             font=ctk.CTkFont(size=11, weight="bold"),
             fg_color=Theme.BTN_VIOLET, hover_color=Theme.BTN_VIOLET_HOVER,
-            height=34, corner_radius=10,
+            height=32, corner_radius=9,
             text_color="#ffffff",
             command=self.toggle_pause
         )
-        self.btn_pause.pack(side="left", fill="x", expand=True, padx=(0, 4))
+        self.btn_pause.pack(side="left", fill="x", expand=True, padx=(0, 3))
 
         self.btn_stop = ctk.CTkButton(
             self.running_controls_frame, text="⏹ Стоп", 
             font=ctk.CTkFont(size=11, weight="bold"),
             fg_color=Theme.BTN_RED, hover_color=Theme.BTN_RED_HOVER,
-            height=34, corner_radius=10,
+            height=32, corner_radius=9,
             text_color="#ffffff",
             command=self.stop_bot
         )
-        self.btn_stop.pack(side="left", fill="x", expand=True, padx=(4, 0))
+        self.btn_stop.pack(side="left", fill="x", expand=True, padx=(3, 0))
 
         # Кнопка: Продолжить (приостановленный скрипт)
         self.btn_resume = ctk.CTkButton(
             sidebar, text="▶️  Продолжить работу", 
             font=ctk.CTkFont(size=11, weight="bold"),
             fg_color=Theme.BTN_GREEN, hover_color=Theme.BTN_GREEN_HOVER,
-            height=34, corner_radius=10,
+            height=32, corner_radius=9,
             text_color="#ffffff",
             command=self.resume_bot
         )
@@ -474,24 +479,24 @@ class App(ctk.CTk):
             sidebar, text="🔑  Авторизоваться на hh.ru", 
             font=ctk.CTkFont(size=11, weight="bold"),
             fg_color=Theme.BTN_CYAN, hover_color=Theme.BTN_CYAN_HOVER,
-            height=34, corner_radius=10,
+            height=32, corner_radius=9,
             text_color="#ffffff",
             command=self.start_auth
         )
-        self.btn_auth.pack(fill="x", padx=14, pady=(0, 6))
+        self.btn_auth.pack(fill="x", padx=12, pady=(0, 4))
 
         # ── Разделитель ──
-        ctk.CTkFrame(sidebar, height=1, fg_color=Theme.SEPARATOR).pack(fill="x", padx=18, pady=6)
+        ctk.CTkFrame(sidebar, height=1, fg_color=Theme.SEPARATOR).pack(fill="x", padx=16, pady=3)
 
         # ── Лимиты запуска ──
         ctk.CTkLabel(
             sidebar, text="ЛИМИТЫ ЗАПУСКА",
             font=ctk.CTkFont(size=9, weight="bold"),
             text_color=Theme.TEXT_MUTED
-        ).pack(anchor="w", padx=18, pady=(0, 4))
+        ).pack(anchor="w", padx=16, pady=(2, 2))
 
         limit_applies_row = ctk.CTkFrame(sidebar, fg_color="transparent")
-        limit_applies_row.pack(fill="x", padx=18, pady=(2, 4))
+        limit_applies_row.pack(fill="x", padx=16, pady=(1, 2))
         
         ctk.CTkLabel(
             limit_applies_row, text="Лимит откликов:   ", 
@@ -500,8 +505,8 @@ class App(ctk.CTk):
         ).pack(side="left")
         
         self.entry_main_max_applies = ctk.CTkEntry(
-            limit_applies_row, width=65, height=26,
-            fg_color=Theme.BG_DARKEST, border_color=Theme.BORDER, corner_radius=6,
+            limit_applies_row, width=60, height=24,
+            fg_color=Theme.BG_DARKEST, border_color=Theme.BORDER, corner_radius=5,
             font=ctk.CTkFont(size=11),
             text_color=Theme.TEXT_PRIMARY
         )
@@ -509,7 +514,7 @@ class App(ctk.CTk):
         self.entry_main_max_applies.insert(0, str(Config.MAX_APPLIES_PER_RUN))
 
         limit_time_row = ctk.CTkFrame(sidebar, fg_color="transparent")
-        limit_time_row.pack(fill="x", padx=18, pady=(2, 4))
+        limit_time_row.pack(fill="x", padx=16, pady=(1, 2))
         
         ctk.CTkLabel(
             limit_time_row, text="Время работы:   ", 
@@ -518,8 +523,8 @@ class App(ctk.CTk):
         ).pack(side="left")
         
         self.entry_main_work_hours = ctk.CTkEntry(
-            limit_time_row, width=42, height=26,
-            fg_color=Theme.BG_DARKEST, border_color=Theme.BORDER, corner_radius=6,
+            limit_time_row, width=38, height=24,
+            fg_color=Theme.BG_DARKEST, border_color=Theme.BORDER, corner_radius=5,
             font=ctk.CTkFont(size=11),
             text_color=Theme.TEXT_PRIMARY
         )
@@ -533,8 +538,8 @@ class App(ctk.CTk):
         ).pack(side="left")
         
         self.entry_main_work_minutes = ctk.CTkEntry(
-            limit_time_row, width=42, height=26,
-            fg_color=Theme.BG_DARKEST, border_color=Theme.BORDER, corner_radius=6,
+            limit_time_row, width=38, height=24,
+            fg_color=Theme.BG_DARKEST, border_color=Theme.BORDER, corner_radius=5,
             font=ctk.CTkFont(size=11),
             text_color=Theme.TEXT_PRIMARY
         )
@@ -548,60 +553,60 @@ class App(ctk.CTk):
         ).pack(side="left")
 
         # ── Разделитель ──
-        ctk.CTkFrame(sidebar, height=1, fg_color=Theme.SEPARATOR).pack(fill="x", padx=18, pady=6)
+        ctk.CTkFrame(sidebar, height=1, fg_color=Theme.SEPARATOR).pack(fill="x", padx=16, pady=3)
 
         # ── Автономный режим ──
         ctk.CTkLabel(
             sidebar, text="РЕЖИМ РАБОТЫ",
             font=ctk.CTkFont(size=9, weight="bold"),
             text_color=Theme.TEXT_MUTED
-        ).pack(anchor="w", padx=18, pady=(0, 4))
+        ).pack(anchor="w", padx=16, pady=(2, 2))
 
         self.switch_night = ctk.CTkSwitch(
             sidebar, text="  Автономный режим\n  (пропускать ошибки)", 
-            font=ctk.CTkFont(size=11),
+            font=ctk.CTkFont(size=10),
             progress_color=Theme.ACCENT_PRIMARY,
             button_color=Theme.ACCENT_VIOLET,
             button_hover_color=Theme.BTN_VIOLET_HOVER,
             text_color=Theme.TEXT_SECONDARY,
             command=self.toggle_night_mode
         )
-        self.switch_night.pack(anchor="w", padx=18, pady=(4, 6))
+        self.switch_night.pack(anchor="w", padx=16, pady=(2, 3))
         if Config.NIGHT_MODE:
             self.switch_night.select()
 
         self.switch_confirm = ctk.CTkSwitch(
             sidebar, text="  Подтверждать отклики\n  (проверка писем вручную)", 
-            font=ctk.CTkFont(size=11),
+            font=ctk.CTkFont(size=10),
             progress_color=Theme.ACCENT_PRIMARY,
             button_color=Theme.ACCENT_VIOLET,
             button_hover_color=Theme.BTN_VIOLET_HOVER,
             text_color=Theme.TEXT_SECONDARY,
             command=self.toggle_confirm_mode
         )
-        self.switch_confirm.pack(anchor="w", padx=18, pady=(4, 12))
+        self.switch_confirm.pack(anchor="w", padx=16, pady=(2, 4))
         if Config.CONFIRM_APPLIES:
             self.switch_confirm.select()
 
         # ── Разделитель ──
-        ctk.CTkFrame(sidebar, height=1, fg_color=Theme.SEPARATOR).pack(fill="x", padx=18, pady=6)
+        ctk.CTkFrame(sidebar, height=1, fg_color=Theme.SEPARATOR).pack(fill="x", padx=16, pady=3)
 
         # ── Кнопка Аналитика ──
         ctk.CTkLabel(
             sidebar, text="АНАЛИТИКА",
             font=ctk.CTkFont(size=9, weight="bold"),
             text_color=Theme.TEXT_MUTED
-        ).pack(anchor="w", padx=18, pady=(0, 4))
+        ).pack(anchor="w", padx=16, pady=(2, 2))
 
         self.btn_dashboard = ctk.CTkButton(
             sidebar, text="📊  Открыть дашборд", 
             font=ctk.CTkFont(size=11, weight="bold"),
             fg_color=Theme.BTN_CYAN, hover_color=Theme.BTN_CYAN_HOVER,
-            height=36, corner_radius=10,
+            height=32, corner_radius=9,
             text_color="#ffffff",
             command=self.open_dashboard_url
         )
-        self.btn_dashboard.pack(fill="x", padx=14, pady=(0, 14))
+        self.btn_dashboard.pack(fill="x", padx=12, pady=(0, 6))
         # ─── Правая часть (Карточки KPI + Консоль логов) ───
         right_container = ctk.CTkFrame(self.tab_control, fg_color="transparent")
         right_container.grid(row=0, column=1, padx=(0, 10), pady=10, sticky="nsew")
@@ -615,22 +620,22 @@ class App(ctk.CTk):
 
         def _make_stat_card(parent, title, value_attr, default_val, icon, accent_color, col, font_size=14):
             card = ctk.CTkFrame(parent, fg_color=Theme.BG_CARD, corner_radius=12, border_width=1, border_color=Theme.BORDER)
-            card.grid(row=0, column=col, padx=4, sticky="ew")
+            card.grid(row=0, column=col, padx=3, sticky="ew")
             
             top_row = ctk.CTkFrame(card, fg_color="transparent")
-            top_row.pack(fill="x", padx=10, pady=(8, 2))
+            top_row.pack(fill="x", padx=6, pady=(6, 2))
             
-            ctk.CTkLabel(top_row, text=icon, font=ctk.CTkFont(size=13)).pack(side="left")
-            ctk.CTkLabel(top_row, text=title.upper(), font=ctk.CTkFont(size=9, weight="bold"), text_color=Theme.TEXT_MUTED).pack(side="left", padx=5)
+            ctk.CTkLabel(top_row, text=icon, font=ctk.CTkFont(size=12)).pack(side="left")
+            ctk.CTkLabel(top_row, text=title.upper(), font=ctk.CTkFont(size=9, weight="bold"), text_color=Theme.TEXT_MUTED).pack(side="left", padx=4)
             
             val_lbl = ctk.CTkLabel(card, text=default_val, font=ctk.CTkFont(size=font_size, weight="bold"), text_color=accent_color)
-            val_lbl.pack(anchor="w", padx=12, pady=(0, 8))
+            val_lbl.pack(anchor="w", padx=10, pady=(0, 6))
             setattr(self, value_attr, val_lbl)
 
-        _make_stat_card(stats_frame, "Отклики", "lbl_stat_applies", f"0 / {Config.MAX_APPLIES_PER_RUN}", "🚀", Theme.ACCENT_GREEN, 0, font_size=14)
+        _make_stat_card(stats_frame, "Отклики", "lbl_stat_applies", f"{Database.get_successful_applies_count()} / {Config.MAX_APPLIES_PER_RUN}", "🚀", Theme.ACCENT_GREEN, 0, font_size=14)
         _make_stat_card(stats_frame, "Время сессии", "lbl_stat_time", "00:00:00", "⏱", Theme.ACCENT_CYAN, 1, font_size=14)
-        _make_stat_card(stats_frame, "Оценка ИИ", "lbl_stat_score", "— / 10", "🤖", Theme.ACCENT_VIOLET, 2, font_size=14)
-        _make_stat_card(stats_frame, "Задержка", "lbl_stat_mode", "Смарт-динамика", "☕", Theme.ACCENT_AMBER, 3, font_size=12)
+        _make_stat_card(stats_frame, "Оценка", "lbl_stat_score", "— / 10", "🎯", Theme.ACCENT_VIOLET, 2, font_size=14)
+        _make_stat_card(stats_frame, "Задержка", "lbl_stat_mode", "Авто (Смарт)", "☕", Theme.ACCENT_AMBER, 3, font_size=12)
 
         # ─── Консоль логов ───
         console_frame = ctk.CTkFrame(
@@ -1437,6 +1442,13 @@ class App(ctk.CTk):
         self.status_indicator.configure(text_color=Theme.STATUS_OFF)
         self.status_text_label.configure(text="Остановлен", text_color=Theme.STATUS_OFF)
 
+        # При остановке возвращаем на карточки общее итоговое число откликов из БД
+        try:
+            if hasattr(self, "lbl_stat_applies") and self.lbl_stat_applies.winfo_exists():
+                self.lbl_stat_applies.configure(text=f"{Database.get_successful_applies_count()} / {Config.MAX_APPLIES_PER_RUN}")
+        except Exception:
+            pass
+
     def save_main_limits_to_env(self):
         """Считывает лимиты с главной панели, сохраняет их в .env и Config."""
         max_applies = self.entry_main_max_applies.get().strip()
@@ -1566,6 +1578,18 @@ class App(ctk.CTk):
                 return
 
         self.bot_running = True
+        self.bot_start_time = time.time()
+        self.current_applied_count = 0
+        
+        # Сбрасываем плашки KPI перед стартом
+        if hasattr(self, "lbl_stat_applies") and self.lbl_stat_applies.winfo_exists():
+            self.lbl_stat_applies.configure(text=f"0 / {Config.MAX_APPLIES_PER_RUN}")
+        if hasattr(self, "lbl_stat_time") and self.lbl_stat_time.winfo_exists():
+            self.lbl_stat_time.configure(text="00:00:00")
+        if hasattr(self, "lbl_stat_score") and self.lbl_stat_score.winfo_exists():
+            self.lbl_stat_score.configure(text="— / 10")
+        if hasattr(self, "lbl_stat_mode") and self.lbl_stat_mode.winfo_exists():
+            self.lbl_stat_mode.configure(text="Смарт-динамика")
         
         # Динамически переключаем кнопки управления
         self.btn_run.pack_forget()
@@ -1613,8 +1637,30 @@ class App(ctk.CTk):
             self.write_log(f"[❌ Ошибка запуска бота]: {e}\n", "error")
             self.reset_bot_ui_state()
 
+    def update_session_timer(self):
+        """Динамический отсчёт времени работы бота в карточке KPI"""
+        try:
+            if self.bot_running and self.bot_start_time:
+                elapsed = int(time.time() - self.bot_start_time)
+                hrs = elapsed // 3600
+                mins = (elapsed % 3600) // 60
+                secs = elapsed % 60
+                if hasattr(self, "lbl_stat_time") and self.lbl_stat_time.winfo_exists():
+                    self.lbl_stat_time.configure(text=f"{hrs:02d}:{mins:02d}:{secs:02d}")
+            elif not self.bot_running:
+                total_sec = Database.get_total_duration()
+                hrs = total_sec // 3600
+                mins = (total_sec % 3600) // 60
+                secs = total_sec % 60
+                if hasattr(self, "lbl_stat_time") and self.lbl_stat_time.winfo_exists():
+                    self.lbl_stat_time.configure(text=f"{hrs:02d}:{mins:02d}:{secs:02d}")
+        except Exception:
+            pass
+        self.after(1000, self.update_session_timer)
+
     def read_bot_logs(self):
         # Построчно считывает вывод процесса бота
+        import re
         while self.bot_process and self.bot_running:
             line = self.bot_process.stdout.readline()
             if not line:
@@ -1622,6 +1668,35 @@ class App(ctk.CTk):
             
             # Очищаем ANSI-цвета
             clean_line = ANSI_ESCAPE.sub('', line)
+            
+            # ── Динамическое обновление карточек KPI ──
+            try:
+                # 1. Счётчик откликов
+                match_app = re.search(r'🚀\s*\[(\d+)/(\d+)\]', clean_line)
+                if match_app:
+                    curr = match_app.group(1)
+                    max_a = match_app.group(2)
+                    self.after(0, lambda c=curr, m=max_a: self.lbl_stat_applies.configure(text=f"{c} / {m}"))
+                elif "Успешно отправлено" in clean_line or "Отправлен отклик" in clean_line or "Успешно (" in clean_line:
+                    self.current_applied_count += 1
+                    curr_c = self.current_applied_count
+                    self.after(0, lambda c=curr_c: self.lbl_stat_applies.configure(text=f"{c} / {Config.MAX_APPLIES_PER_RUN}"))
+
+                # 2. Оценка соответствия
+                match_score = re.search(r'Оценка соответствия\]:\s*(\d+)', clean_line)
+                if match_score:
+                    sc = match_score.group(1)
+                    self.after(0, lambda s=sc: self.lbl_stat_score.configure(text=f"{s} / 10"))
+
+                # 3. Задержка
+                match_delay = re.search(r'(?:Ожидание|Задержка)[^\d]*(\d+\.?\d*)\s*сек', clean_line)
+                if match_delay:
+                    d_val = match_delay.group(1)
+                    self.after(0, lambda d=d_val: self.lbl_stat_mode.configure(text=f"{d} сек"))
+                elif "Человеческий перерыв" in clean_line:
+                    self.after(0, lambda: self.lbl_stat_mode.configure(text="Перерыв ☕"))
+            except Exception:
+                pass
             
             # Определяем тег цвета по содержимому строки
             tag = None

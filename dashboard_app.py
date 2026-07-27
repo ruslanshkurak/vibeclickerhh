@@ -34,8 +34,25 @@ HTML_TEMPLATE = """
         body {
             font-family: 'Inter', sans-serif;
             background-color: #020617; /* Slate 950 */
+            color: #f8fafc;
+            margin: 0;
+            padding: 1.5rem;
         }
-        /* Custom scrollbar for premium feel */
+        /* Fallback CSS grid to guarantee no card overlapping on narrow widths */
+        .stats-grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+        .main-layout-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+        .stats-card {
+            box-sizing: border-box;
+            min-width: 0;
+        }
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -465,10 +482,10 @@ HTML_TEMPLATE = """
         <header class="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 pb-6 border-b border-slate-900">
             <div>
                 <div class="flex items-center space-x-3">
-                    <span class="text-3xl">🤖</span>
-                    <h1 class="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">VibeClickerHH.ru Analyst</h1>
+                    <span class="text-3xl">⚡</span>
+                    <h1 class="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">VibeClickerHH.ru Аналитика</h1>
                 </div>
-                <p class="text-slate-400 text-sm mt-1">Интерактивный ИИ-дашборд автооткликов и воронки собеседований</p>
+                <p class="text-slate-400 text-sm mt-1">Интерактивный аналитический дашборд автооткликов и воронки собеседований</p>
             </div>
             <div class="mt-4 md:mt-0 flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <div class="flex items-center space-x-2 bg-slate-900/50 border border-slate-800 px-3 py-2 rounded-xl text-xs text-slate-300">
@@ -483,9 +500,9 @@ HTML_TEMPLATE = """
         </header>
 
         <!-- Stats & Funnel Section -->
-        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+        <div class="main-layout-grid mb-8">
             <!-- Left Side: Stats Cards (2/3 width) -->
-            <div class="xl:col-span-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div class="stats-grid-container">
                 <!-- Card 1 -->
                 <div onclick="setCardFilter('all', this)" class="stats-card ring-2 ring-indigo-500 bg-slate-900/60 backdrop-blur-md p-5 rounded-2xl border border-slate-900 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 cursor-pointer active:scale-[0.98]">
                     <div class="flex items-center justify-between">
@@ -548,7 +565,7 @@ HTML_TEMPLATE = """
             <div class="bg-slate-900/60 backdrop-blur-md p-6 rounded-2xl border border-slate-900 shadow-xl flex flex-col justify-between">
                 <div>
                     <h3 class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4 flex items-center justify-between">
-                        <span>📊 ИИ-Воронка Конверсии</span>
+                        <span>📊 Воронка конверсии</span>
                         <span class="text-[9px] font-bold bg-indigo-500/15 text-indigo-400 px-2 py-0.5 rounded-full uppercase tracking-wider">Live Analyst</span>
                     </h3>
                     
