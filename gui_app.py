@@ -102,6 +102,8 @@ os.environ["APP_VERSION"] = APP_VERSION
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
+        import tkinter as tk
+        tk._default_root = self
 
         # Конфигурация главного окна
         self.title("VibeClickerHH.ru")
@@ -1161,7 +1163,10 @@ class App(ctk.CTk):
         except Exception as e:
             self.write_log(f"[❌ Ошибка] Не удалось сохранить resume.txt: {e}\n", "error")
 
-    def save_settings_env(self):
+    def save_settings_env(self, show_toast_notification=True):
+        import tkinter as tk
+        tk._default_root = self
+
         # Получаем данные из полей ввода
         api_key = self.entry_api_key.get().strip()
         model = self.combobox_model.get().strip()
@@ -1285,7 +1290,8 @@ class App(ctk.CTk):
                 self.entry_main_work_minutes.insert(0, str(Config.WORK_TIME_MINUTES))
 
             self.write_log("[✔️] Настройки успешно сохранены и применены!\n", "success")
-            self.show_toast("✅ Успех", "Настройки успешно сохранены!")
+            if show_toast_notification:
+                self.show_toast("✅ Успех", "Настройки успешно сохранены!")
         except Exception as e:
             self.write_log(f"[❌ Ошибка] Не удалось сохранить настройки в .env: {e}\n", "error")
 
@@ -1322,14 +1328,14 @@ class App(ctk.CTk):
         Config.NIGHT_MODE = val
         self.write_log(f"[🌙] Автономный режим откликов: {'ВКЛЮЧЕН' if val else 'ВЫКЛЮЧЕН'}\n", "bot_action")
         # Сохраним изменение в .env автоматически
-        self.save_settings_env()
+        self.save_settings_env(show_toast_notification=False)
 
     def toggle_confirm_mode(self):
         val = self.switch_confirm.get()
         Config.CONFIRM_APPLIES = val
         self.write_log(f"[🛡️] Подтверждение откликов вручную: {'ВКЛЮЧЕНО' if val else 'ВЫКЛЮЧЕНО'}\n", "bot_action")
         # Сохраним изменение в .env автоматически
-        self.save_settings_env()
+        self.save_settings_env(show_toast_notification=False)
 
     # ==========================================
     # 🚀 Управление фоновыми процессами
@@ -1725,6 +1731,8 @@ class App(ctk.CTk):
 
     def show_toast(self, title, message):
         """Премиальное всплывающее уведомление с автозакрытием"""
+        import tkinter as tk
+        tk._default_root = self
         toast = ctk.CTkToplevel(self)
         toast.title("")
         toast.geometry("360x130")
@@ -1887,6 +1895,8 @@ if __name__ == "__main__":
                 pass
 
         app = App()
+        import tkinter as tk
+        tk._default_root = app
         
         # Закрываем мгновенное окно загрузки после инициализации главного окна
         if splash_win:
@@ -1894,6 +1904,7 @@ if __name__ == "__main__":
                 splash_win.destroy()
             except Exception:
                 pass
+            tk._default_root = app
 
         # Закрываем PyInstaller splash screen, если он есть
         try:
