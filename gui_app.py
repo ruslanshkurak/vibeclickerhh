@@ -128,7 +128,7 @@ class Theme:
     STATUS_WARNING = "#f59e0b"
 
 
-APP_VERSION = "v1.0.1"
+APP_VERSION = "v1.0.2"
 os.environ["APP_VERSION"] = APP_VERSION
 
 
