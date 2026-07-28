@@ -1,6 +1,40 @@
 import os
 import sys
+import threading
+import traceback
 from pathlib import Path
+
+# Настройка UTF-8 для корректного вывода в консоль/терминал на Windows
+try:
+    if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace', line_buffering=True)
+    if sys.stderr and hasattr(sys.stderr, 'reconfigure'):
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace', line_buffering=True)
+except Exception:
+    pass
+
+# Глобальный обработчик необработанных исключений для трансляции в терминал
+_CURRENT_APP_INSTANCE = None
+
+def _global_excepthook(exc_type, exc_value, exc_tb):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_tb)
+        return
+    err_formatted = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
+    try:
+        sys.stderr.write(f"\n[❌ НЕОБРАБОТАННОЕ ИСКЛЮЧЕНИЕ]:\n{err_formatted}\n")
+        sys.stderr.flush()
+    except Exception:
+        pass
+    if _CURRENT_APP_INSTANCE and hasattr(_CURRENT_APP_INSTANCE, "write_log"):
+        try:
+            _CURRENT_APP_INSTANCE.write_log(f"\n[❌ Сбой приложения]: {exc_value}\n{err_formatted}\n", tag="error")
+        except Exception:
+            pass
+
+sys.excepthook = _global_excepthook
+if hasattr(threading, 'excepthook'):
+    threading.excepthook = lambda args: _global_excepthook(args.exc_type, args.exc_value, args.exc_traceback)
 
 # Если мы в скомпилированном EXE, заставляем Playwright искать браузеры в глобальной папке пользователя
 if getattr(sys, 'frozen', False):
@@ -12,7 +46,6 @@ if getattr(sys, 'frozen', False):
 
 import time
 import subprocess
-import threading
 import re
 from pathlib import Path
 import customtkinter as ctk
@@ -102,6 +135,8 @@ os.environ["APP_VERSION"] = APP_VERSION
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
+        global _CURRENT_APP_INSTANCE
+        _CURRENT_APP_INSTANCE = self
         import tkinter as tk
         tk._default_root = self
 
@@ -182,6 +217,7 @@ class App(ctk.CTk):
 
         # ─── Привязка горячих клавиш для русской раскладки клавиатуры ───
         self.bind_all("<Control-KeyPress>", self.setup_russian_hotkeys)
+        self.bind("<Return>", lambda event: self.resume_bot() if hasattr(self, "btn_resume") and self.btn_resume.winfo_exists() and self.btn_resume.winfo_ismapped() else None)
 
         # Закрываем сплэш-скрин загрузки PyInstaller, если он запущен
         try:
@@ -937,7 +973,7 @@ class App(ctk.CTk):
         self.txt_contacts.grid(row=1, column=1, padx=16, pady=8, sticky="ew")
         self.txt_contacts.insert("1.0", Config.USER_CONTACTS)
 
-        self._create_field_label(pers_frame, "Пожелания к тону/стилю:\n(например: пиши кратко,\nупор на микросервисы)", row=2)
+        self._create_field_label(pers_frame, "Особые пожелания и приоритеты:\n(стоп-условия -> 0 баллов;\nжелаемые технологии/условия -> +баллы)", row=2)
         self.txt_special_wishes = ctk.CTkTextbox(
             pers_frame, fg_color=Theme.BG_DARKEST, 
             border_color=Theme.BORDER, border_width=1, 
@@ -977,18 +1013,7 @@ class App(ctk.CTk):
         # Контейнер для кнопок управления внизу вкладки
         buttons_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
         buttons_frame.grid(row=3, column=0, columnspan=2, padx=8, pady=(12, 20), sticky="ew")
-        buttons_frame.columnconfigure((0, 1), weight=1)
-
-        # Кнопка: Сохранить настройки
-        self.btn_save_settings = ctk.CTkButton(
-            buttons_frame, text="💾  Сохранить настройки в .env", 
-            font=ctk.CTkFont(size=14, weight="bold"),
-            fg_color=Theme.BTN_VIOLET, hover_color=Theme.BTN_VIOLET_HOVER,
-            height=48, corner_radius=12,
-            text_color="#ffffff",
-            command=self.save_settings_env
-        )
-        self.btn_save_settings.grid(row=0, column=0, padx=(0, 6), sticky="ew")
+        buttons_frame.columnconfigure(0, weight=1)
 
         # Кнопка: Очистить пропущенные из базы
         self.btn_reset_skipped = ctk.CTkButton(
@@ -999,7 +1024,23 @@ class App(ctk.CTk):
             text_color="#ffffff",
             command=self.reset_skipped_vacancies
         )
-        self.btn_reset_skipped.grid(row=0, column=1, padx=(6, 0), sticky="ew")
+        self.btn_reset_skipped.grid(row=0, column=0, sticky="ew")
+
+        # Привязываем динамическое автосохранение ко всем полям настроек
+        for entry in [
+            self.entry_api_key, self.entry_search_query, self.entry_region_id,
+            self.entry_fit_score, self.entry_max_applies, self.entry_exclude_grades,
+            self.entry_blacklist, self.entry_max_empty_pages, self.entry_max_skips,
+            self.entry_last_page, self.entry_work_hours, self.entry_work_minutes
+        ]:
+            entry.bind("<KeyRelease>", lambda e: self.auto_save_settings())
+
+        for txt in [self.txt_contacts, self.txt_special_wishes, self.txt_template_letter]:
+            txt.bind("<KeyRelease>", lambda e: self.auto_save_settings())
+
+        self.combobox_model.configure(command=lambda choice: self.auto_save_settings())
+        self.combobox_region.configure(command=lambda choice: (self.on_region_selected(choice), self.auto_save_settings()))
+        self.switch_resume_page.configure(command=self.auto_save_settings)
 
         # Применяем изначальное визуальное состояние полей на основе флага DISABLE_AI
         self.toggle_ai_settings_state()
@@ -1143,30 +1184,28 @@ class App(ctk.CTk):
             except Exception:
                 pass
         self.txt_resume.insert("1.0", resume_text)
-
-        # Кнопка сохранения резюме
-        self.btn_save_resume = ctk.CTkButton(
-            self.tab_resume, text="💾  Сохранить изменения в resume.txt", 
-            font=ctk.CTkFont(size=14, weight="bold"),
-            fg_color=Theme.BTN_VIOLET, hover_color=Theme.BTN_VIOLET_HOVER,
-            height=48, corner_radius=12,
-            text_color="#ffffff",
-            command=self.save_resume_file
-        )
-        self.btn_save_resume.grid(row=2, column=0, padx=16, pady=(8, 16), sticky="ew")
+        self.txt_resume.bind("<KeyRelease>", lambda e: self.auto_save_resume())
 
     # ==========================================
     # ⚙️ Логика сохранения настроек и файлов
     # ==========================================
-    def save_resume_file(self):
+    def auto_save_resume(self):
         text = self.txt_resume.get("1.0", "end-1c").strip()
         try:
             with open(Config.RESUME_FILE, "w", encoding="utf-8") as f:
                 f.write(text)
-            self.write_log("[✔️] Файл resume.txt успешно обновлен!\n", "success")
-            self.show_toast("✅ Успех", "Резюме успешно сохранено!")
-        except Exception as e:
-            self.write_log(f"[❌ Ошибка] Не удалось сохранить resume.txt: {e}\n", "error")
+        except Exception:
+            pass
+
+    def auto_save_settings(self):
+        try:
+            self.save_settings_env(show_toast_notification=False)
+        except Exception:
+            pass
+
+    def save_resume_file(self):
+        self.auto_save_resume()
+        self.show_toast("✅ Успех", "Резюме успешно сохранено!")
 
     def save_settings_env(self, show_toast_notification=True):
         import tkinter as tk
@@ -1395,13 +1434,29 @@ class App(ctk.CTk):
             try: Config.PAUSE_FILE.unlink()
             except: pass
             self.btn_pause.configure(text="⏸  Пауза")
-            self.write_log("\n[▶️] Снято с паузы. Ожидайте продолжения работы...\n", "success")
+            self.status_indicator.configure(text_color=Theme.STATUS_ACTIVE)
+            self.status_text_label.configure(text="Выполняется", text_color=Theme.STATUS_ACTIVE)
+            self.write_log("\n[▶️] Снято с паузы. Возобновление работы...\n", "success")
         else:
             try: Config.PAUSE_FILE.touch()
             except: pass
             self.btn_pause.configure(text="▶️  Возобновить")
-            self.write_log("\n[⏸️] Бот поставлен на паузу. Он остановится перед следующим действием.\n", "warning")
+            self.status_indicator.configure(text_color=Theme.STATUS_WARNING)
+            self.status_text_label.configure(text="Пауза", text_color=Theme.STATUS_WARNING)
+            self.write_log("\n[⏸️] Бот поставлен на паузу. Нажмите 'Возобновить' для продолжения.\n", "warning")
 
+
+    def prompt_user_action(self):
+        """Отображает зеленую кнопку 'Продолжить работу' в GUI при запросах или ошибках бота"""
+        self.status_indicator.configure(text_color=Theme.STATUS_WARNING)
+        self.status_text_label.configure(text="Требуется действие", text_color=Theme.STATUS_WARNING)
+        if hasattr(self, "btn_resume"):
+            self.btn_resume.pack(fill="x", padx=12, pady=(0, 6))
+            self.btn_resume.configure(state="normal")
+        try:
+            self.bell()
+        except Exception:
+            pass
 
     def resume_bot(self):
         if self.bot_process and self.bot_running:
@@ -1411,7 +1466,8 @@ class App(ctk.CTk):
                 self.bot_process.stdin.flush()
                 self.status_indicator.configure(text_color=Theme.STATUS_ACTIVE)
                 self.status_text_label.configure(text="Выполняется", text_color=Theme.STATUS_ACTIVE)
-                self.btn_resume.configure(state="disabled")
+                if hasattr(self, "btn_resume"):
+                    self.btn_resume.pack_forget()
             except Exception as e:
                 self.write_log(f"[❌ Ошибка при отправке команды продолжения]: {e}\n", "error")
 
@@ -1712,12 +1768,8 @@ class App(ctk.CTk):
                 tag = "info"
             
             # Если строка содержит сигнал о вводе пользователя (ожидание нажатия Enter)
-            if "Нажмите ENTER" in clean_line or "🚨 СКРИПТ ПРИОСТАНОВЛЕН" in clean_line:
-                # Переводим индикатор в статус ожидания/паузы
-                self.status_indicator.configure(text_color=Theme.STATUS_WARNING)
-                self.status_text_label.configure(text="Требуется действие", text_color=Theme.STATUS_WARNING)
-                self.btn_resume.configure(state="normal")
-                self.bell() # Звуковой сигнал на ПК
+            if "Нажмите ENTER" in clean_line or "🚨 СКРИПТ ПРИОСТАНОВЛЕН" in clean_line or "ТРЕБУЕТСЯ ПОДТВЕРЖДЕНИЕ" in clean_line:
+                self.after(0, self.prompt_user_action)
                 tag = "warning"
                 
             self.write_log(clean_line, tag)
@@ -1735,14 +1787,23 @@ class App(ctk.CTk):
     # 📺 Вспомогательные методы
     # ==========================================
     def write_log(self, text, tag=None):
-        """Безопасно пишет логи из фоновых потоков в GUI виджет с цветовой подсветкой"""
+        """Безопасно пишет логи из фоновых потоков в GUI виджет с цветовой подсветкой и дублирует в терминал"""
+        # Трансляция логов и ошибок напрямую в терминал/консоль
+        try:
+            target_stream = sys.stderr if tag == "error" else sys.stdout
+            target_stream.write(text if text.endswith('\n') else text + '\n')
+            target_stream.flush()
+        except Exception:
+            pass
+
         def append():
-            if tag:
-                # Вставляем текст с цветным тегом
-                self.txt_log._textbox.insert("end", text, tag)
-            else:
-                self.txt_log._textbox.insert("end", text)
-            self.txt_log.see("end")
+            if hasattr(self, "txt_log") and self.txt_log._textbox.winfo_exists():
+                if tag:
+                    # Вставляем текст с цветным тегом
+                    self.txt_log._textbox.insert("end", text, tag)
+                else:
+                    self.txt_log._textbox.insert("end", text)
+                self.txt_log.see("end")
         self.after(0, append)
 
     def clear_console(self):

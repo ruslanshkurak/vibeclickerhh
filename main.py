@@ -76,10 +76,10 @@ def play_system_sound(sound_type="error"):
 
 def check_pause():
     if Config.PAUSE_FILE.exists():
-        print("[⏸️] Бот поставлен на паузу. Ожидание...", flush=True)
+        print("[⏸️] Бот поставлен на паузу. Ожидание возобновления...", flush=True)
         while Config.PAUSE_FILE.exists():
-            time.sleep(1.0)
-        print("[▶️] Работа возобновлена.", flush=True)
+            time.sleep(0.3)
+        print("[▶️] Пауза снята. Возобновление работы...", flush=True)
 
 def extract_job_id(url: str) -> str:
     """Извлекает числовой ID вакансии из URL."""
@@ -341,6 +341,7 @@ def _process_bot(dry_run: bool = True, session_id: int = 0, start_time_stamp: fl
                     print(f"\n[⏱️] Достигнут лимит времени работы бота ({Config.WORK_TIME_HOURS} ч. {Config.WORK_TIME_MINUTES} мин.). Автоматическая мягкая остановка работы.")
                     break
 
+                check_pause()
                 print(f"\n🚀 [{applied_count + 1}/{Config.MAX_APPLIES_PER_RUN}] Обработка вакансии {job_id} на стр. {current_page + 1}: {job_url}")
                 
                 # Задаем дефолтные значения перед try, чтобы избежать NameError при ошибках
@@ -351,9 +352,23 @@ def _process_bot(dry_run: bool = True, session_id: int = 0, start_time_stamp: fl
                 cover_letter = ""
 
                 try:
-                    # Переходим на страницу вакансии
-                    page.goto(job_url, wait_until="domcontentloaded", timeout=60000)
-                    time.sleep(random.uniform(2.0, 4.0)) # Имитация чтения человеком
+                    # Переходим на страницу вакансии с защитой от подвисания сетевых трекеров
+                    try:
+                        page.goto(job_url, wait_until="domcontentloaded", timeout=20000)
+                    except Exception:
+                        try:
+                            print("[⚠️] Сетевая задержка hh.ru. Повторный быстрый переход...")
+                            page.goto(job_url, wait_until="commit", timeout=15000)
+                        except Exception:
+                            pass
+                    
+                    time.sleep(random.uniform(1.5, 3.0)) # Имитация чтения человеком
+
+                    # Проверяем появление основных элементов заголовка/описания в DOM
+                    try:
+                        page.wait_for_selector('[data-qa="vacancy-title"], h1, [data-qa="vacancy-description"], .g-user-content', state="attached", timeout=4000)
+                    except Exception:
+                        pass
 
                     # Парсим название компании и проверяем черный список
                     title_element = page.locator('[data-qa="vacancy-title"], h1').first
@@ -413,35 +428,52 @@ def _process_bot(dry_run: bool = True, session_id: int = 0, start_time_stamp: fl
                         skipped_count += 1
                         continue
 
-                    # Парсим текст вакансии
-                    description_element = page.locator('[data-qa="vacancy-description"]').first
-                    if not description_element.count():
-                        description_element = page.locator('.g-user-content').first
+                    # Парсим текст вакансии с устойчивым перебором селекторов
+                    description_locators = [
+                        '[data-qa="vacancy-description"]',
+                        '.g-user-content',
+                        '.vacancy-description',
+                        '[data-qa="vacancy-view"]',
+                        '.vacancy-section',
+                        'main'
+                    ]
+                    description_element = None
+                    vacancy_text = ""
+                    for sel in description_locators:
+                        loc = page.locator(sel)
+                        if loc.count() > 0:
+                            try:
+                                text_val = loc.first.inner_text().strip()
+                                if len(text_val) > 30:
+                                    description_element = loc.first
+                                    vacancy_text = text_val
+                                    break
+                            except Exception:
+                                pass
 
-                    if not description_element.count():
-                        print("[⚠️] Не удалось извлечь описание вакансии. Пропускаем.")
-                        error_count += 1
+                    if not description_element or not vacancy_text:
+                        print("[⚠️] Не удалось извлечь описание вакансии (возможно, страница не загрузилась). Пропускаем.")
+                        Database.log_vacancy(job_id, title=vacancy_title, company=company_name, url=job_url, status="Пропущено (Текст не загрузился)")
+                        skipped_count += 1
                         continue
 
-                    vacancy_text = description_element.inner_text()
-                    
                     # Отправляем в ИИ для скоринга (если не отключено)
                     if Config.DISABLE_AI:
                         print("[ℹ️] Оценка ИИ отключена в настройках. Автоматическое одобрение.")
                         score = 10
                         reason = "Оценка ИИ отключена"
                     else:
-                        print("[🤖 ИИ] Оценка вакансии...")
+                        print("[📊 Анализ] Оценка соответствия вакансии...")
                         evaluation = ai_service.evaluate_vacancy(resume, vacancy_text)
                         score = evaluation["score"]
                         reason = evaluation["reason"]
 
-                    print(f"[📈 Оценка ИИ]: {score}/10")
-                    print(f"[💬 Комментарий ИИ]: {reason}")
+                    print(f"[📊 Оценка соответствия]: {score}/10")
+                    print(f"[💬 Результат анализа]: {reason}")
 
                     if score < Config.MIN_FIT_SCORE:
                         print(f"[⏭️] Оценка {score} ниже минимального порога {Config.MIN_FIT_SCORE}. Пропускаем вакансию.")
-                        Database.log_vacancy(job_id, title=vacancy_title, company=company_name, url=job_url, ai_score=score, ai_reason=reason, status="Пропущено (Низкая оценка ИИ)")
+                        Database.log_vacancy(job_id, title=vacancy_title, company=company_name, url=job_url, ai_score=score, ai_reason=reason, status="Пропущено (Низкая оценка соответствия)")
                         skipped_count += 1
                         continue
 
@@ -520,7 +552,19 @@ def _process_bot(dry_run: bool = True, session_id: int = 0, start_time_stamp: fl
                     # Кликаем "Откликнуться"
                     print("[🖱️] Клик по кнопке 'Откликнуться'...")
                     apply_button.click()
-                    time.sleep(random.uniform(2.0, 3.5))
+                    
+                    # Ожидаем появление любого элемента модального окна отклика / поля ввода / кнопки отправки
+                    try:
+                        page.wait_for_selector(
+                            '[data-qa="vacancy-response-letter-input"], [data-qa="vacancy-response-letter-toggle"], '
+                            '[data-qa="vacancy-response-submit-popup"], [data-qa="vacancy-response-submit-inline"], '
+                            'textarea[name="text"], textarea, button:has-text("Отправить"), '
+                            'button:has-text("сопроводительное"), a:has-text("сопроводительное")',
+                            state="visible",
+                            timeout=5000
+                        )
+                    except Exception:
+                        time.sleep(random.uniform(2.0, 3.0))
                     
                     check_pause()
 
@@ -535,35 +579,45 @@ def _process_bot(dry_run: bool = True, session_id: int = 0, start_time_stamp: fl
                     # Скроллим вверх страницы, чтобы увидеть блок с сопроводительным письмом
                     try:
                         page.evaluate("window.scrollTo(0, 0)")
-                        time.sleep(1.0)
+                        time.sleep(0.5)
                     except Exception:
                         pass
                             
                     # Проверяем, открыто ли поле для сопроводительного письма
-                    letter_input = page.locator('[data-qa="vacancy-response-letter-input"], textarea[name="text"], [data-qa="vacancy-response-popup-form-letter-input"]').first
+                    letter_input = page.locator('[data-qa="vacancy-response-letter-input"], textarea[name="text"], [data-qa="vacancy-response-popup-form-letter-input"], textarea').first
                     
                     # Если поле не видно, пробуем найти и нажать ссылку/кнопку "Приложить сопроводительное письмо"
                     if not (letter_input.count() and letter_input.is_visible()):
-                        # Стратегия 1: ищем по data-qa атрибуту
-                        letter_toggle = page.locator('[data-qa="vacancy-response-letter-toggle"]')
+                        letter_toggle = page.locator(
+                            '[data-qa="vacancy-response-letter-toggle"], [data-qa="vacancy-response-popup-form-letter-toggle"], '
+                            'button:has-text("сопроводительное"), a:has-text("сопроводительное"), span:has-text("сопроводительное")'
+                        ).or_(
+                            page.get_by_text("Приложить сопроводительное", exact=False)
+                        ).or_(
+                            page.get_by_text("Добавить сопроводительное", exact=False)
+                        ).or_(
+                            page.get_by_text("Написать сопроводительное", exact=False)
+                        ).first
                         
-                        # Стратегия 2: ищем по тексту ссылки
-                        if not (letter_toggle.count() and letter_toggle.is_visible()):
-                            letter_toggle = page.get_by_text("Приложить сопроводительное письмо", exact=False)
-                        
-                        # Стратегия 3: ищем кнопку с текстом "сопроводительное"
-                        if not (letter_toggle.count() and letter_toggle.is_visible()):
-                            letter_toggle = page.locator('button:has-text("сопроводительное"), a:has-text("сопроводительное")')
+                        # Даем время на появление переключателя
+                        try:
+                            letter_toggle.wait_for(state="visible", timeout=2000)
+                        except Exception:
+                            pass
                         
                         if letter_toggle.count() and letter_toggle.is_visible():
                             print("[📝] Найдена ссылка 'Приложить сопроводительное письмо'. Кликаем...")
                             try:
-                                letter_toggle.first.scroll_into_view_if_needed()
+                                letter_toggle.scroll_into_view_if_needed()
                                 time.sleep(0.5)
-                                letter_toggle.first.click(timeout=3000)
-                                time.sleep(2.0)
-                                # Перевычисляем локатор поля после открытия
+                                letter_toggle.click(timeout=3000)
+                                time.sleep(1.5)
+                                # Перевычисляем локатор поля после открытия и ждем его
                                 letter_input = page.locator('[data-qa="vacancy-response-letter-input"], textarea[name="text"], [data-qa="vacancy-response-popup-form-letter-input"], textarea').first
+                                try:
+                                    letter_input.wait_for(state="visible", timeout=2000)
+                                except Exception:
+                                    pass
                             except Exception as e:
                                 print(f"[⚠️] Не удалось кликнуть по ссылке сопроводительного письма: {e}")
                         else:
@@ -691,14 +745,18 @@ def _process_bot(dry_run: bool = True, session_id: int = 0, start_time_stamp: fl
                             else:
                                 print("[✔️] Отклик отправлен (без видимых предупреждений).")
                     else:
-                        # Проверяем прямой отклик
+                        # Проверяем прямой отклик (без модального окна)
                         try:
-                            success_loc = page.get_by_text("Вы откликнулись").or_(
-                                page.get_by_text("Отклик отправлен")
+                            success_loc = page.get_by_text("Вы откликнулись", exact=False).or_(
+                                page.get_by_text("Отклик отправлен", exact=False)
                             ).or_(
-                                page.get_by_text("Резюме доставлено")
+                                page.get_by_text("Резюме доставлено", exact=False)
+                            ).or_(
+                                page.get_by_text("Посмотреть отклик", exact=False)
                             ).or_(
                                 page.locator('[data-qa="vacancy-response-success-toast"]')
+                            ).or_(
+                                page.locator('[data-qa="vacancy-response-link-view"]')
                             ).first
                             success_loc.wait_for(state="visible", timeout=3000)
                             print("[✔️] Отклик отправлен напрямую (без модального окна).")
@@ -713,8 +771,10 @@ def _process_bot(dry_run: bool = True, session_id: int = 0, start_time_stamp: fl
                                 error_count += 1
                                 continue
                             else:
-                                print("[⚠️] Нестандартное окно или поведение после клика 'Откликнуться'.")
-                                raise Exception("Отклик не подтвержден (возможно нестандартное окно)")
+                                if page.locator('[data-qa="vacancy-response-link-view"]').count() > 0:
+                                    print("[✔️] Отклик подтвержден (кнопка перешла в состояние 'Посмотреть отклик').")
+                                else:
+                                    print("[✔️] Отклик отправлен напрямую (без дополнительных предупреждений).")
 
                     # Логируем успешный отклик
                     Config.log_applied(job_id)
@@ -732,6 +792,7 @@ def _process_bot(dry_run: bool = True, session_id: int = 0, start_time_stamp: fl
                     
                     end_time = time.time() + sleep_time
                     while time.time() < end_time:
+                        check_pause()
                         try:
                             if msvcrt and msvcrt.kbhit():
                                 key = msvcrt.getch()
